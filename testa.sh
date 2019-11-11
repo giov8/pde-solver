@@ -1,3 +1,3 @@
 make
-./pdeSolver -nx 10 -ny 10 -i 10000 -o saida.txt
-./pdeSolver -nx 10 -ny 10 -i 10
+./pdeSolver -nx 100 -ny 100 -i 10 -o saida.txt
+

@@ -150,9 +150,6 @@ void calculaMatrizCoef(EDP_t *e){
 *  \return mediaTempo Tempo medio do calculo de Gauss Seidel
 */
 real_t calculaGaussSeidel(EDP_t *e, real_t *r){
-	unsigned int i,j,pos,iter;
-	double tempoInicio, somaTempo;
-
 	if (e->nx <= 0) {
 		fprintf(stderr, "Parametro nx inválido.\n");
 		exit(EXIT_FAILURE);
@@ -170,12 +167,44 @@ real_t calculaGaussSeidel(EDP_t *e, real_t *r){
 
 
 	calculaMatrizCoef(e);
+
+	unsigned int pos;
+
+	//double tempoInicio, somaTempo;
 	
-	somaTempo = 0.0;
+// #### new gauss ####
+
+for (unsigned int iter = 0 ; iter < e->maxIter ; iter++) {
+
+	// calcula por fora o valor da "matriz" pos[0,0]
+	e->x[0] = e->b[0] - e->ds*e->x[1] - e->dsa*e->x[e->nx];
+	// calcula a primeira linha da "matriz"
+	for (unsigned int i = 1 ; i <= e->nx-2 ; i++) {
+		e->x[i] = e->b[i] - e->di*e->x[i-1] 
+		real_t aux = e->ds*e->x[i+1] - e->dsa*e->x[i+e->nx];
+		e->x[i] -= aux;
+	}
+	// calcula por fora o ultimo valor da "matriz" pos[0,nx]
+	e->x[e->nx-1] = e->b[e->nx-1] - e->di*e->x[e->nx-2] - e->dsa*e->x[2*e->nx-1];
+
+	// ## calcula a "matriz" interna ##
+
+	for (unsigned int j = 1 ; j <= e->ny -2 ; j++) {
+		
+		for (i = 1 ; i <= e->nx -2 ; i ++) {
+
+		}
+	}
+
+}
+
+// ### end new gauss ###
+
+	double somaTempo = 0.0;
 
 	for(iter = 0 ; iter < e->maxIter ; iter++)
 	{			
-		tempoInicio = timestamp();
+		double tempoInicio = timestamp();
 
 		for(j = 0 ; j < e->ny ; j++){
 			for(i = 0; i < e->nx; i++){
@@ -186,7 +215,7 @@ real_t calculaGaussSeidel(EDP_t *e, real_t *r){
 				// analisa os casos de fronteira
 				if(i != 0)    e->x[pos] -= e->di*e->x[pos-1];
 				if(i != (e->nx-1)) e->x[pos] -= e->ds*e->x_prev[pos+1];
-				if(j != 0)    e->x[pos] -= e->dia*e->x[pos-e->nx];
+				if(j != 0)    e->x[pos] -= e->dia*e->x[pos-e->nx]; //este nop
 				if(j != (e->ny-1)) e->x[pos] -= e->dsa*e->x_prev[pos+e->nx];
 				
 				e->x[pos] = e->x[pos]/e->dp; // guarda valor de z na malha
