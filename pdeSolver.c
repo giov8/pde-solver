@@ -43,7 +43,9 @@ int main(int argc, char *argv[]){
 	FILE * arquivo_saida;
 	real_t lx = PI, ly = PI;
 	real_t mediaTempo;
-	EDP_t *e;
+	EDP_t *e; //old
+
+	XB_t *xb;
 
 	arquivo_saida = trataArgumentos(argc, argv, &nx, &ny, &maxIter); // trata argumentos da linha de comando
 	real_t *vetorResiduos = (real_t*) malloc(maxIter*(sizeof(real_t)));

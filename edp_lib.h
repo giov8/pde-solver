@@ -30,16 +30,26 @@ typedef double real_t;
  * @brief Struct que guarda variaveis para o calculo de EDPs
  */
 typedef struct EDP_t {
-	real_t *x, *x_prev;
-	real_t *b;
-	real_t *r;
+	//real_t *x;
+	//real_t *b;
 	real_t dp, ds, di, dsa, dia; // diagonais
 	real_t lx, ly, hx, hy;
 	int nx, ny;
 	int maxIter; // numero de iteracoes que serao usadas para o calculo iterativo
-} EDP_t;
+} EDP_t; 
+
+typedef struct XB_t {
+	real_t x;
+	real_t b;
+} XB_t;
 
 #define PI 3.14159265358979323846
+
+#define DP 0
+#define DS 1
+#define DI 2
+#define DSA 3
+#define DIA 4 
 
 real_t timestamp(void);
 EDP_t *criaTipoEDP(int nx, int ny, real_t lx, real_t ly, int maxIter);

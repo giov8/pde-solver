@@ -10,6 +10,11 @@
 #include <math.h>
 #include "edp_lib.h"
 
+#define LIKWID_MARKER_INIT
+#define LIKWID_MARKER_START(regionTag)
+#define LIKWID_MARKER_STOP(regionTag)
+#define LIKWID_MARKER_CLOSE
+
 /*!
   @brief Essa função retorna o tempo atual em milisegundos
   @return o tempo em milisegundos no formato real_t
@@ -46,9 +51,9 @@ EDP_t *criaTipoEDP(int nx, int ny, real_t lx, real_t ly, int maxIter){
 	e->lx = lx;
 	e->ly = ly;
 
-	e->x = (real_t *) calloc (nx * ny, sizeof (real_t)); // vetor solucao
-	e->x_prev = (real_t *) calloc (nx * ny, sizeof (real_t)); // vetor solucao
-	e->b = (real_t *) calloc (nx * ny, sizeof (real_t)); // vetor de termos independentes
+	//e->x = (real_t *) calloc (nx * ny, sizeof (real_t)); // vetor solucao
+	//e->b = (real_t *) calloc (nx * ny, sizeof (real_t)); // vetor de termos independentes
+	//e->x_prev = (real_t *) calloc (nx * ny, sizeof (real_t)); // vetor solucao
 
 
 	// passo dado na malha
@@ -149,7 +154,25 @@ void calculaMatrizCoef(EDP_t *e){
 *  \param r Vetor de resíduos a cada iteração
 *  \return mediaTempo Tempo medio do calculo de Gauss Seidel
 */
+
 real_t calculaGaussSeidel(EDP_t *e, real_t *r){
+	calculaMatrizCoef(e);
+
+	real_t diag[5];
+	diag[DP] = e->dp;
+	diag[DS] = e->ds;
+	diag[DI] = e->di;
+	diag[DSA] = e->dsa;
+	diag[DIA] = e->dia;
+
+	register unsigned int nx = e->nx; 
+	unsigned int ny = e->ny; 
+
+	xb = (XB_t*) calloc (nx*e->ny(sizeof(XB_t))) 
+
+	LIKWID_MARKER_INIT
+	LIKWID_MARKER_START("gauss")
+
 	if (e->nx <= 0) {
 		fprintf(stderr, "Parametro nx inválido.\n");
 		exit(EXIT_FAILURE);
@@ -166,17 +189,9 @@ real_t calculaGaussSeidel(EDP_t *e, real_t *r){
 	}
 
 
-	calculaMatrizCoef(e);
-
-	unsigned int pos;
-
-	double tempoInicio = 0.0;
-  double somaTempo = 0.0;
-
 // #### new gauss ####
 
 	for (unsigned int iter = 0 ; iter < e->maxIter ; iter++) {
-		tempoInicio = timestamp();
 		// calcula por fora o valor da "matriz" pos[0,0]
 		e->x[0] = e->b[0] - e->ds*e->x[1] - e->dsa*e->x[e->nx];
 	  	e->x[0] = e->x[0]/e->dp;
@@ -186,25 +201,25 @@ real_t calculaGaussSeidel(EDP_t *e, real_t *r){
 			e->x[i] = e->b[i] - e->di*e->x[i-1];
 			real_t aux = e->ds*e->x[i+1] + e->dsa*e->x[i+e->nx];
 			e->x[i] -= aux;
+	    	e->x[i] = e->x[i]/e->dp;
+		}
 
-	    		e->x[i] = e->x[i]/e->dp;
-	}
-	// calcula por fora o ultimo valor da "matriz" pos[0,nx]
-	e->x[e->nx-1] = e->b[e->nx-1] - e->di*e->x[e->nx-2] - e->dsa*e->x[2*e->nx-1];
-  	e->x[e->nx-1] = e->x[e->nx-1]/e->dp;
+		// calcula por fora o ultimo valor da "matriz" pos[0,nx]
+		e->x[e->nx-1] = e->b[e->nx-1] - e->di*e->x[e->nx-2] - e->dsa*e->x[2*e->nx-1];
+		e->x[e->nx-1] = e->x[e->nx-1]/e->dp;
 
 	// calcula a "matriz" interna
 	for (unsigned int j = 1 ; j <= e->ny -2 ; j++) {
 		// calculando o primeiro valor
-      		unsigned int k = j*e->nx; // só pra não calcular toda vez
-      		e->x[k] = e->b[k] - e->ds*e->x[k+1];
-      		real_t aux = e->dia*e->x[k-e->nx] + e->dsa*e->x[k+e->nx];
-     		e->x[k] -= aux;
+  		unsigned int k = j*e->nx; // só pra não calcular toda vez
+  		e->x[k] = e->b[k] - e->ds*e->x[k+1];
+  		real_t aux = e->dia*e->x[k-e->nx] + e->dsa*e->x[k+e->nx];
+ 		e->x[k] -= aux;
 
-     		e->x[k] = e->x[k]/e->dp;
+ 		e->x[k] = e->x[k]/e->dp;
 
-      // calculando valores centrais
-      		for (unsigned int i = 1 ; i <= e->nx -2 ; i ++) {
+        // calculando valores centrais
+      	for (unsigned int i = 1 ; i <= e->nx -2 ; i ++) {
 			e->x[k+i] = e->b[k+i] - e->di*e->x[k+i-1];
 			aux = e->ds*e->x[k+i+1] +  e->dia*e->x[k+i-e->nx];
 			e->x[k+i] = e->x[k+i] - aux - e->dsa*e->x[k+i+e->nx];
@@ -219,67 +234,32 @@ real_t calculaGaussSeidel(EDP_t *e, real_t *r){
 		e->x[k+e->nx-1] = e->x[k+e->nx-1]/e->dp;
 	}
 
-  // calcula pos[0,ny-1]
-  unsigned int k = e->nx*(e->ny-1); // só pra calcular menos
-  e->x[k] = e->b[k] - e->ds*e->x[k+1] - e->dia*e->x[k-e->nx];
+	  // calcula pos[0,ny-1]
+	  unsigned int k = e->nx*(e->ny-1); // só pra calcular menos
+	  e->x[k] = e->b[k] - e->ds*e->x[k+1] - e->dia*e->x[k-e->nx];
 
-  e->x[k] = e->x[k]/e->dp;
-  // calcula última linha da matriz "fronteira"
-  for (unsigned int i = 1 ; i <= e->nx-2 ; i++) {
+	  e->x[k] = e->x[k]/e->dp;
+	  // calcula última linha da matriz "fronteira"
+	  for (unsigned int i = 1 ; i <= e->nx-2 ; i++) {
 		e->x[k+i] = e->b[k+i] -  e->di*e->x[k+i-1];
 		real_t aux = e->ds*e->x[k+i+1] + e->dia*e->x[k+i-e->nx];
 		e->x[k+i] -= aux;
 
-  /*  e->x[pos] -= e->di*e->x[pos-1];
-    e->x[pos] -= e->ds*e->x_prev[pos+1];
-    e->x[pos] -= e->dia*e->x[pos-e->nx];*/
+	  /*  e->x[pos] -= e->di*e->x[pos-1];
+	    e->x[pos] -= e->ds*e->x_prev[pos+1];
+	    e->x[pos] -= e->dia*e->x[pos-e->nx];*/
 
-    e->x[k+i] = e->x[k+i]/e->dp;
+	  	e->x[k+i] = e->x[k+i]/e->dp;
 	}
-  // calcula pos[nx-1,ny-1]
-  e->x[(e->nx)*(e->ny)-1] = e->b[(e->nx)*(e->ny)-1] - e->di*e->x[(e->nx)*(e->ny)-2] - e->dia*e->x[(e->nx)*(e->ny)-1-e->nx];
-  e->x[(e->nx)*(e->ny)-1] = e->x[(e->nx)*(e->ny)-1]/e->dp;
-
-  somaTempo += (timestamp() - tempoInicio);
-  r[iter] = calculaResiduo(e);
-
-  }
+	  // calcula pos[nx-1,ny-1]
+	  e->x[(e->nx)*(e->ny)-1] = e->b[(e->nx)*(e->ny)-1] - e->di*e->x[(e->nx)*(e->ny)-2] - e->dia*e->x[(e->nx)*(e->ny)-1-e->nx];
+	  e->x[(e->nx)*(e->ny)-1] = e->x[(e->nx)*(e->ny)-1]/e->dp;
 
 
-
-// ### end new gauss ###
-/*
-	double somaTempo = 0.0;
-
-	for(iter = 0 ; iter < e->maxIter ; iter++)
-	{
-		double tempoInicio = timestamp();
-
-		for(j = 0 ; j < e->ny ; j++){
-			for(i = 0; i < e->nx; i++){
-				pos = j*e->nx+i; // iterar pelo vetor solucao
-
-				e->x[pos] = e->b[pos];
-
-				// analisa os casos de fronteira
-				if(i != 0)    e->x[pos] -= e->di*e->x[pos-1];
-				if(i != (e->nx-1)) e->x[pos] -= e->ds*e->x_prev[pos+1];
-				if(j != 0)    e->x[pos] -= e->dia*e->x[pos-e->nx];
-				if(j != (e->ny-1)) e->x[pos] -= e->dsa*e->x_prev[pos+e->nx];
-
-				e->x[pos] = e->x[pos]/e->dp; // guarda valor de z na malha
-
-				e->x_prev[pos] = e->x[pos]; // guarda it anterior
-			}
-		}
-
-		somaTempo += (timestamp() - tempoInicio);
-		r[iter] = calculaResiduo(e);
-
-	}
-*/
-
-	return somaTempo/e->maxIter;
+	  }
+	LIKWID_MARKER_STOP("gauss")
+	LIKWID_MARKER_CLOSE
+	return 1;
 //  return 1.0;
 }
 
