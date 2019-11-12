@@ -1,14 +1,15 @@
 # GRR20163049 Bruno Henrique Labres
 # GRR20182981 Giovani Gurkevicz Marciniak
 
-CFLAGS = -Wall -g -std=c99  -O3 -mavx -march=native
+#CFLAGS = -Wall -g -std=c99  -O3 -mavx -march=native
+CFLAGS = 	-Wall -g -std=c99 -O3  -march=native
 LDLIBS = -lm
 
 objs = edp_lib.o pdeSolver.o
- 
+
 # regra default (primeira regra)
 all: pdeSolver doc
- 
+
 # regras de ligacao
 pdeSolver: $(objs)
 	gcc -o pdeSolver $(objs) $(LDLIBS)

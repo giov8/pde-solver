@@ -170,21 +170,28 @@ real_t calculaGaussSeidel(EDP_t *e, real_t *r){
 
 	unsigned int pos;
 
-	//double tempoInicio, somaTempo;
+	double tempoInicio = 0.0;
+  double somaTempo = 0.0;
 
 // #### new gauss ####
 
 for (unsigned int iter = 0 ; iter < e->maxIter ; iter++) {
+	somaTempo = 0.0;
 	// calcula por fora o valor da "matriz" pos[0,0]
 	e->x[0] = e->b[0] - e->ds*e->x[1] - e->dsa*e->x[e->nx];
+  e->x[0] = e->x[0]/e->dp;
+
 	// calcula a primeira linha da "matriz"
 	for (unsigned int i = 1 ; i <= e->nx-2 ; i++) {
 		e->x[i] = e->b[i] - e->di*e->x[i-1];
 		real_t aux = e->ds*e->x[i+1] + e->dsa*e->x[i+e->nx];
 		e->x[i] -= aux;
+
+    e->x[i] = e->x[i]/e->dp;
 	}
 	// calcula por fora o ultimo valor da "matriz" pos[0,nx]
 	e->x[e->nx-1] = e->b[e->nx-1] - e->di*e->x[e->nx-2] - e->dsa*e->x[2*e->nx-1];
+  e->x[e->nx-1] = e->x[e->nx-1]/e->dp;
 
 	// calcula a "matriz" interna
   for (unsigned int j = 1 ; j <= e->ny -2 ; j++) {
@@ -193,30 +200,51 @@ for (unsigned int iter = 0 ; iter < e->maxIter ; iter++) {
       e->x[k] = e->b[k] - e->ds*e->x[k+1];
       real_t aux = e->dia*e->x[k-e->nx] + e->dsa*e->x[k+e->nx];
       e->x[k] -= aux;
+
+      e->x[k] = e->x[k]/e->dp;
       // calculando valores centrais
       for (unsigned int i = 1 ; i <= e->nx -2 ; i ++) {
         e->x[k+i] = e->b[k+i] - e->di*e->x[k+i-1];
         aux = e->ds*e->x[k+i+1] +  e->dia*e->x[k+i-e->nx];
         e->x[k+i] = e->x[k+i] - aux - e->dsa*e->x[k+i+e->nx];
+
+        e->x[k+i] = e->x[k+i]/e->dp;
 		}
     // calculando o ultimo valor
     e->x[k+e->nx-1] = e->b[k+e->nx-1] - e->di*e->x[k+e->nx-2];
     aux = e->dia*e->x[k-1] + e->dsa*e->x[k+2*e->nx-1];
     e->x[k+e->nx-1] = e->x[k+e->nx-1] - aux;
+
+    e->x[k+e->nx-1] = e->x[k+e->nx-1]/e->dp;
 	}
 
   // calcula pos[0,ny-1]
   unsigned int k = e->nx*(e->ny-1); // só pra calcular menos
   e->x[k] = e->b[k] - e->ds*e->x[k+1] - e->dia*e->x[k-e->nx];
+
+  e->x[k] = e->x[k]/e->dp;
   // calcula última linha da matriz "fronteira"
   for (unsigned int i = 1 ; i <= e->nx-2 ; i++) {
-		e->x[k+i] = e->b[k+i] -  e->di*e->x[k-1];
+		e->x[k+i] = e->b[k+i] -  e->di*e->x[k+i-1];
 		real_t aux = e->ds*e->x[k+i+1] + e->dia*e->x[k+i-e->nx];
-		e->x[i] -= aux;
+		e->x[k+i] -= aux;
+
+  /*  e->x[pos] -= e->di*e->x[pos-1];
+    e->x[pos] -= e->ds*e->x_prev[pos+1];
+    e->x[pos] -= e->dia*e->x[pos-e->nx];*/
+
+    e->x[k+i] = e->x[k+i]/e->dp;
 	}
   // calcula pos[nx-1,ny-1]
   e->x[(e->nx)*(e->ny)-1] = e->b[(e->nx)*(e->ny)-1] - e->di*e->x[(e->nx)*(e->ny)-2] - e->dia*e->x[(e->nx)*(e->ny)-1-e->nx];
-}
+  e->x[(e->nx)*(e->ny)-1] = e->x[(e->nx)*(e->ny)-1]/e->dp;
+
+  somaTempo += (timestamp() - tempoInicio);
+  r[iter] = calculaResiduo(e);
+
+  }
+
+
 
 // ### end new gauss ###
 /*
@@ -250,8 +278,8 @@ for (unsigned int iter = 0 ; iter < e->maxIter ; iter++) {
 	}
 */
 
-	//return somaTempo/e->maxIter;
-  return 1.0;
+	return somaTempo/e->maxIter;
+//  return 1.0;
 }
 
 
