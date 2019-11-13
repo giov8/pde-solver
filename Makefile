@@ -1,9 +1,12 @@
 # GRR20163049 Bruno Henrique Labres
 # GRR20182981 Giovani Gurkevicz Marciniak
 
-#CFLAGS = -Wall -g -std=c99  -O3 -mavx -march=native
-CFLAGS = -Wall -g -std=c99 -O3 -mavx  -march=native -DLIKWID_PERFMON -I/home/soft/likwid/bin:/home/soft/likwid/sbin:${PATH}/include -L/home/soft/likwid/bin:/home/soft/likwid/sbin:${PATH}/lib -llikwid
-LDLIBS = -lm
+LIKWID = /home/soft/likwid
+LIKWID_FLAGS = -I$(LIKWID)/include
+LIKWID_LIBS = -L$(LIKWID)/lib
+
+CFLAGS = -Wall -g -O3 -mavx  -march=native $(LIKWID_FLAGS) -DLIKWID_PERFMON 
+LDLIBS = -lm $(LIKWID_LIBS) -llikwid
 
 objs = edp_lib.o pdeSolver.o
 

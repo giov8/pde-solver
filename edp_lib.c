@@ -10,9 +10,9 @@
 #include <math.h>
 #include "edp_lib.h"
 
-//#ifdef LIKWID_PERFMON
-//#include <likwid.h>
-//#else
+#ifdef LIKWID_PERFMON
+#include <likwid.h>
+#else
 #define LIKWID_MARKER_INIT
 #define LIKWID_MARKER_THREADINIT
 #define LIKWID_MARKER_SWITCH
@@ -21,7 +21,7 @@
 #define LIKWID_MARKER_STOP(regionTag)
 #define LIKWID_MARKER_CLOSE
 #define LIKWID_MARKER_GET(regionTag, nevents, events, time, count)
-//#endif
+#endif
 
 /*!
   @brief Essa função retorna o tempo atual em milisegundos
@@ -164,7 +164,7 @@ void calculaMatrizCoef(EDP_t *e, XB_t *xb){
 *  \return mediaTempo Tempo medio do calculo de Gauss Seidel
 */
 
-real_t calculaGaussSeidel(EDP_t *e, real_t *r, XB_t *xb){
+real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict xb){
 	/*register*/
   unsigned int nx = e->nx;
 	unsigned int ny = e->ny;
@@ -193,12 +193,14 @@ real_t calculaGaussSeidel(EDP_t *e, real_t *r, XB_t *xb){
 		exit(EXIT_FAILURE);
 	}
 
-	LIKWID_MARKER_INIT
-	LIKWID_MARKER_START("gauss")
+	
 
 // #### new gauss ####
 
 	for (unsigned int iter = 0 ; iter < e->maxIter ; iter++) {
+		LIKWID_MARKER_INIT;
+		LIKWID_MARKER_START("Gauss");
+
 		// calcula por fora o valor da "matriz" pos[0,0]
 		xb[0].x = xb[0].b - diag[DS]*xb[1].x - diag[DSA]*xb[nx].x;
 	  	xb[0].x = xb[0].x/diag[DP];
@@ -260,12 +262,11 @@ real_t calculaGaussSeidel(EDP_t *e, real_t *r, XB_t *xb){
 	  // calcula pos[nx-1,ny-1]
 	  xb[(nx)*(ny)-1].x = xb[(nx)*(ny)-1].b - diag[DI]*xb[(nx)*(ny)-2].x - diag[DIA]*xb[(nx)*(ny)-1-nx].x;
 	  xb[(nx)*(ny)-1].x = xb[(nx)*(ny)-1].x/diag[DP];
-
+	 	LIKWID_MARKER_STOP("gauss");
+		LIKWID_MARKER_CLOSE;
 	  }
-	LIKWID_MARKER_STOP("gauss")
-	LIKWID_MARKER_CLOSE
+	
 	return 1;
-//  return 1.0;
 }
 
 
