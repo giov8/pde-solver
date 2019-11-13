@@ -165,8 +165,9 @@ void calculaMatrizCoef(EDP_t *e, XB_t *xb){
 */
 
 real_t calculaGaussSeidel(EDP_t *e, real_t *r, XB_t *xb){
-	register unsigned int nx = e->nx; 
-	unsigned int ny = e->ny; 
+	/*register*/
+  unsigned int nx = e->nx;
+	unsigned int ny = e->ny;
 	calculaMatrizCoef(e, xb);
 
 	real_t diag[5];
