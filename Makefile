@@ -2,7 +2,7 @@
 # GRR20182981 Giovani Gurkevicz Marciniak
 
 #CFLAGS = -Wall -g -std=c99  -O3 -mavx -march=native
-CFLAGS = 	-Wall -g -std=c99 #-O3 -mavx  -march=native
+CFLAGS = -Wall -g -std=c99 -O3 -mavx  -march=native -DLIKWID_PERFMON -I/home/soft/likwid/bin:/home/soft/likwid/sbin:${PATH}/include -L/home/soft/likwid/bin:/home/soft/likwid/sbin:${PATH}/lib -llikwid
 LDLIBS = -lm
 
 objs = edp_lib.o pdeSolver.o

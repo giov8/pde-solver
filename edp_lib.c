@@ -10,10 +10,18 @@
 #include <math.h>
 #include "edp_lib.h"
 
+//#ifdef LIKWID_PERFMON
+//#include <likwid.h>
+//#else
 #define LIKWID_MARKER_INIT
+#define LIKWID_MARKER_THREADINIT
+#define LIKWID_MARKER_SWITCH
+#define LIKWID_MARKER_REGISTER(regionTag)
 #define LIKWID_MARKER_START(regionTag)
 #define LIKWID_MARKER_STOP(regionTag)
 #define LIKWID_MARKER_CLOSE
+#define LIKWID_MARKER_GET(regionTag, nevents, events, time, count)
+//#endif
 
 /*!
   @brief Essa função retorna o tempo atual em milisegundos
@@ -169,10 +177,6 @@ real_t calculaGaussSeidel(EDP_t *e, real_t *r, XB_t *xb){
 	diag[DIA] = e->dia;
 
 
-
-	LIKWID_MARKER_INIT
-	LIKWID_MARKER_START("gauss")
-
 	if (e->nx <= 0) {
 		fprintf(stderr, "Parametro nx inválido.\n");
 		exit(EXIT_FAILURE);
@@ -188,6 +192,8 @@ real_t calculaGaussSeidel(EDP_t *e, real_t *r, XB_t *xb){
 		exit(EXIT_FAILURE);
 	}
 
+	LIKWID_MARKER_INIT
+	LIKWID_MARKER_START("gauss")
 
 // #### new gauss ####
 
