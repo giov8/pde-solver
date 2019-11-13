@@ -197,8 +197,8 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
 
 // #### new gauss ####
 
+	LIKWID_MARKER_INIT;
 	for (unsigned int iter = 0 ; iter < e->maxIter ; iter++) {
-		LIKWID_MARKER_INIT;
 		LIKWID_MARKER_START("Gauss");
 
 		// calcula por fora o valor da "matriz" pos[0,0]
@@ -262,10 +262,11 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
 	  // calcula pos[nx-1,ny-1]
 	  xb[(nx)*(ny)-1].x = xb[(nx)*(ny)-1].b - diag[DI]*xb[(nx)*(ny)-2].x - diag[DIA]*xb[(nx)*(ny)-1-nx].x;
 	  xb[(nx)*(ny)-1].x = xb[(nx)*(ny)-1].x/diag[DP];
-	 	LIKWID_MARKER_STOP("gauss");
-		LIKWID_MARKER_CLOSE;
+
+		LIKWID_MARKER_STOP("Gauss");
 	  }
 	
+	LIKWID_MARKER_CLOSE;
 	return 1;
 }
 
