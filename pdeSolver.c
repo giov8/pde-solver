@@ -45,13 +45,12 @@ int main(int argc, char *argv[]){
 	real_t mediaTempo;
 	EDP_t *e; //old
 
-	XB_t *xb;
-
 	arquivo_saida = trataArgumentos(argc, argv, &nx, &ny, &maxIter); // trata argumentos da linha de comando
 	real_t *vetorResiduos = (real_t*) malloc(maxIter*(sizeof(real_t)));
 
 	e = criaTipoEDP(nx, ny, lx, ly, maxIter); // cria estruturas de dados necessarias para os calculos envolvendo EDPs
+	XB_t *xb = (XB_t *) calloc (e->nx * e->ny, sizeof (XB_t));
 
-	mediaTempo = calculaGaussSeidel(e, vetorResiduos);
-	escreveSolucao(arquivo_saida, e, vetorResiduos, mediaTempo) ;
+	mediaTempo = calculaGaussSeidel(e, vetorResiduos, xb);
+	escreveSolucao(arquivo_saida, e, vetorResiduos, mediaTempo, xb) ;
 }

@@ -54,9 +54,9 @@ typedef struct XB_t {
 real_t timestamp(void);
 EDP_t *criaTipoEDP(int nx, int ny, real_t lx, real_t ly, int maxIter);
 FILE * trataArgumentos(int argc, char *argv[], int *nx, int *ny, int *maxIter);
-void calculaMatrizCoef(EDP_t *e);
-real_t calculaGaussSeidel(EDP_t *e, real_t *r);
+void calculaMatrizCoef(EDP_t *e, XB_t *xb);
+real_t calculaGaussSeidel(EDP_t *e, real_t *r, XB_t *xb);
 real_t calculaResiduo(EDP_t *e);
-void escreveSolucao(FILE *arquivo_saida, EDP_t *e, real_t *r, real_t mediaTempo);
+void escreveSolucao(FILE *arquivo_saida, EDP_t *e, real_t *r, real_t mediaTempo, XB_t *xb);
 double timestamp(void);
 #endif

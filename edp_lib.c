@@ -119,7 +119,7 @@ FILE * trataArgumentos(int argc, char *argv[], int *nx, int *ny, int *maxIter){
 *	@brief Função que calcula os termos independentes, aplicando condicoes de fronteira
 *	@param e Estrutura de dados com as variaveis para os calculos envolvendo EDPs
 */
-void calculaMatrizCoef(EDP_t *e){
+void calculaMatrizCoef(EDP_t *e, XB_t *xb){
 	unsigned int i, j;
 	real_t hx, hy, xi, yi;
 
@@ -134,15 +134,16 @@ void calculaMatrizCoef(EDP_t *e){
 		xi = 0.0;
 		for(i = 0; i < e->nx ; i++) {
 			xi += hx;
-			e->b[j*e->nx+i] = (2*hx*hx*hy*hy)*F(xi,yi); // calcula vetor de termos independentes
+			//e->b[j*e->nx+i] = (2*hx*hx*hy*hy)*F(xi,yi); // calcula vetor de termos independentes
+			xb[j*e->nx+i].b = (2*hx*hx*hy*hy)*F(xi,yi); // calcula vetor de termos independentes
 
 			if(j == 0){
 				// aplica condicao de fronteira
-				e->b[j*e->nx+i] -= e->dia*sin(2*PI*(PI - xi))*sinh(PI*PI);
+				xb[j*e->nx+i].b -= e->dia*sin(2*PI*(PI - xi))*sinh(PI*PI);
 			}
 			if(j == e->ny-1){
 				// / aplica condicao de fronteira
-				e->b[j*e->nx+i] -= e->dsa*sin(2*PI*xi)*sinh(PI*PI);
+				xb[j*e->nx+i].b -= e->dsa*sin(2*PI*xi)*sinh(PI*PI);
 			}
 	 	}
 	}
@@ -155,8 +156,10 @@ void calculaMatrizCoef(EDP_t *e){
 *  \return mediaTempo Tempo medio do calculo de Gauss Seidel
 */
 
-real_t calculaGaussSeidel(EDP_t *e, real_t *r){
-	calculaMatrizCoef(e);
+real_t calculaGaussSeidel(EDP_t *e, real_t *r, XB_t *xb){
+	register unsigned int nx = e->nx; 
+	unsigned int ny = e->ny; 
+	calculaMatrizCoef(e, xb);
 
 	real_t diag[5];
 	diag[DP] = e->dp;
@@ -165,10 +168,7 @@ real_t calculaGaussSeidel(EDP_t *e, real_t *r){
 	diag[DSA] = e->dsa;
 	diag[DIA] = e->dia;
 
-	register unsigned int nx = e->nx; 
-	unsigned int ny = e->ny; 
 
-	xb = (XB_t*) calloc (nx*e->ny(sizeof(XB_t))) 
 
 	LIKWID_MARKER_INIT
 	LIKWID_MARKER_START("gauss")
@@ -193,68 +193,66 @@ real_t calculaGaussSeidel(EDP_t *e, real_t *r){
 
 	for (unsigned int iter = 0 ; iter < e->maxIter ; iter++) {
 		// calcula por fora o valor da "matriz" pos[0,0]
-		e->x[0] = e->b[0] - e->ds*e->x[1] - e->dsa*e->x[e->nx];
-	  	e->x[0] = e->x[0]/e->dp;
+		xb[0].x = xb[0].b - diag[DS]*xb[1].x - diag[DSA]*xb[nx].x;
+	  	xb[0].x = xb[0].x/diag[DP];
 
 		// calcula a primeira linha da "matriz"
-		for (unsigned int i = 1 ; i <= e->nx-2 ; i++) {
-			e->x[i] = e->b[i] - e->di*e->x[i-1];
-			real_t aux = e->ds*e->x[i+1] + e->dsa*e->x[i+e->nx];
-			e->x[i] -= aux;
-	    	e->x[i] = e->x[i]/e->dp;
+		for (unsigned int i = 1 ; i <= nx-2 ; i++) {
+			xb[i].x = xb[i].b - diag[DI]*xb[i-1].x;
+			real_t aux = diag[DS]*xb[i+1].x + diag[DSA]*xb[i+nx].x;
+			xb[i].x -= aux;
+	    	xb[i].x = xb[i].x/diag[DP];
 		}
 
 		// calcula por fora o ultimo valor da "matriz" pos[0,nx]
-		e->x[e->nx-1] = e->b[e->nx-1] - e->di*e->x[e->nx-2] - e->dsa*e->x[2*e->nx-1];
-		e->x[e->nx-1] = e->x[e->nx-1]/e->dp;
+		xb[nx-1].x = xb[nx-1].b - diag[DI]*xb[nx-2].x - diag[DSA]*xb[2*nx-1].x;
+		xb[nx-1].x = xb[nx-1].x/diag[DP];
 
 	// calcula a "matriz" interna
-	for (unsigned int j = 1 ; j <= e->ny -2 ; j++) {
+	for (unsigned int j = 1 ; j <= ny -2 ; j++) {
 		// calculando o primeiro valor
-  		unsigned int k = j*e->nx; // só pra não calcular toda vez
-  		e->x[k] = e->b[k] - e->ds*e->x[k+1];
-  		real_t aux = e->dia*e->x[k-e->nx] + e->dsa*e->x[k+e->nx];
- 		e->x[k] -= aux;
-
- 		e->x[k] = e->x[k]/e->dp;
+  		unsigned int k = j*nx; // só pra não calcular toda vez
+  		xb[k].x = xb[k].b - diag[DS]*xb[k+1].x;
+  		real_t aux = diag[DIA]*xb[k-nx].x + diag[DSA]*xb[k+e->nx].x;
+ 		xb[k].x -= aux;
+ 		xb[k].x = xb[k].x/diag[DP];
 
         // calculando valores centrais
-      	for (unsigned int i = 1 ; i <= e->nx -2 ; i ++) {
-			e->x[k+i] = e->b[k+i] - e->di*e->x[k+i-1];
-			aux = e->ds*e->x[k+i+1] +  e->dia*e->x[k+i-e->nx];
-			e->x[k+i] = e->x[k+i] - aux - e->dsa*e->x[k+i+e->nx];
+      	for (unsigned int i = 1 ; i <= nx -2 ; i ++) {
+			xb[k+i].x = xb[k+i].b - diag[DI]*xb[k+i-1].x;
+			aux = diag[DS]*xb[k+i+1].x +  diag[DIA]*xb[k+i-nx].x;
+			xb[k+i].x = xb[k+i].x - aux - diag[DSA]*xb[k+i+nx].x;
 
-			e->x[k+i] = e->x[k+i]/e->dp;
+			xb[k+i].x = xb[k+i].x/diag[DP];
 		}
 		// calculando o ultimo valor
-		e->x[k+e->nx-1] = e->b[k+e->nx-1] - e->di*e->x[k+e->nx-2];
-		aux = e->dia*e->x[k-1] + e->dsa*e->x[k+2*e->nx-1];
-		e->x[k+e->nx-1] = e->x[k+e->nx-1] - aux;
+		xb[k+nx-1].x = xb[k+nx-1].b - diag[DI]*xb[k+nx-2].x;
+		aux = diag[DIA]*xb[k-1].x + diag[DSA]*xb[k+2*nx-1].x;
+		xb[k+nx-1].x = xb[k+nx-1].x - aux;
 
-		e->x[k+e->nx-1] = e->x[k+e->nx-1]/e->dp;
+		xb[k+nx-1].x = xb[k+nx-1].x/diag[DP];
 	}
 
 	  // calcula pos[0,ny-1]
-	  unsigned int k = e->nx*(e->ny-1); // só pra calcular menos
-	  e->x[k] = e->b[k] - e->ds*e->x[k+1] - e->dia*e->x[k-e->nx];
+	  unsigned int k = nx*(ny-1); // só pra calcular menos
+	  xb[k].x = xb[k].b - diag[DS]*xb[k+1].x - diag[DIA]*xb[k-nx].x;
 
-	  e->x[k] = e->x[k]/e->dp;
+	  xb[k].x = xb[k].x/diag[DP];
 	  // calcula última linha da matriz "fronteira"
-	  for (unsigned int i = 1 ; i <= e->nx-2 ; i++) {
-		e->x[k+i] = e->b[k+i] -  e->di*e->x[k+i-1];
-		real_t aux = e->ds*e->x[k+i+1] + e->dia*e->x[k+i-e->nx];
-		e->x[k+i] -= aux;
+	  for (unsigned int i = 1 ; i <= nx-2 ; i++) {
+		xb[k+i].x = xb[k+i].b -  diag[DI]*xb[k+i-1].x;
+		real_t aux = diag[DS]*xb[k+i+1].x + diag[DIA]*xb[k+i-nx].x;
+		xb[k+i].x -= aux;
 
 	  /*  e->x[pos] -= e->di*e->x[pos-1];
 	    e->x[pos] -= e->ds*e->x_prev[pos+1];
 	    e->x[pos] -= e->dia*e->x[pos-e->nx];*/
 
-	  	e->x[k+i] = e->x[k+i]/e->dp;
+	  	xb[k+i].x = xb[k+i].x/diag[DP];
 	}
 	  // calcula pos[nx-1,ny-1]
-	  e->x[(e->nx)*(e->ny)-1] = e->b[(e->nx)*(e->ny)-1] - e->di*e->x[(e->nx)*(e->ny)-2] - e->dia*e->x[(e->nx)*(e->ny)-1-e->nx];
-	  e->x[(e->nx)*(e->ny)-1] = e->x[(e->nx)*(e->ny)-1]/e->dp;
-
+	  xb[(nx)*(ny)-1].x = xb[(nx)*(ny)-1].b - diag[DI]*xb[(nx)*(ny)-2].x - diag[DIA]*xb[(nx)*(ny)-1-nx].x;
+	  xb[(nx)*(ny)-1].x = xb[(nx)*(ny)-1].x/diag[DP];
 
 	  }
 	LIKWID_MARKER_STOP("gauss")
@@ -273,7 +271,7 @@ real_t calculaResiduo(EDP_t *e) {
 	unsigned int i, j, pos;
 	real_t residuo;
 	real_t normaquadrada = 0.0;
-
+/*
 	for(j = 0 ; j < e->ny ; j++){
 		for(i = 0; i < e->nx; i++){
 			pos = j*e->nx+i; // iterar pelo vetor
@@ -289,7 +287,8 @@ real_t calculaResiduo(EDP_t *e) {
 			normaquadrada += residuo * residuo;
 		}
 	}
-
+*/
+	normaquadrada=1;
 	return sqrt(normaquadrada);
 
 }
@@ -302,7 +301,7 @@ real_t calculaResiduo(EDP_t *e) {
   \param ny Tamanho da grade
   \param s Vetor de solucao
 */
-void escreveSolucao(FILE *arquivo_saida, EDP_t *e, real_t *r, real_t mediaTempo){
+void escreveSolucao(FILE *arquivo_saida, EDP_t *e, real_t *r, real_t mediaTempo, XB_t *xb){
 	unsigned int i,j,k;
 	real_t xi, yi;
 
@@ -322,7 +321,7 @@ void escreveSolucao(FILE *arquivo_saida, EDP_t *e, real_t *r, real_t mediaTempo)
 		yi = 0.0;
 		for (j = 0 ; j < e->ny ; j++){
 			yi += e->hy;
-			fprintf(arquivo_saida, "%g %g %g \n",xi,yi,e->x[k]);
+			fprintf(arquivo_saida, "%g %g %g \n",xi,yi,xb[k].x);
 			k++;
 		}
 		fprintf(arquivo_saida, "\n");
