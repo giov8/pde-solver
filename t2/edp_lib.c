@@ -206,12 +206,21 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
 	  	xb[0].x = xb[0].x/diag[DP];
 
 		// calcula a primeira linha da "matriz"
-		for (unsigned int i = 1 ; i <= nx-2 ; i++) {
+		for (unsigned int i = 1 ; i <= nx-3  ; i++) {
 			xb[i].x = xb[i].b - diag[DI]*xb[i-1].x;
 			real_t aux = diag[DS]*xb[i+1].x + diag[DSA]*xb[i+nx].x;
 			xb[i].x -= aux;
 	    	xb[i].x = xb[i].x/diag[DP];
+
+
+	    	xb[i+1].x = xb[i+1].b - diag[DI]*xb[i].x;
+			real_t aux2 = diag[DS]*xb[i+2].x + diag[DSA]*xb[i+1+nx].x;
+			xb[i+1].x -= aux2;
+	    	xb[i+1].x = xb[i+1].x/diag[DP];
+
 		}
+
+
 
 		// calcula por fora o ultimo valor da "matriz" pos[0,nx]
 		xb[nx-1].x = xb[nx-1].b - diag[DI]*xb[nx-2].x - diag[DSA]*xb[2*nx-1].x;
@@ -227,12 +236,20 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
  		xb[k].x = xb[k].x/diag[DP];
 
         // calculando valores centrais
-      	for (unsigned int i = 1 ; i <= nx -2 ; i ++) {
+      	for (unsigned int i = 1 ; i <= nx -3 ; i ++) {
 			xb[k+i].x = xb[k+i].b - diag[DI]*xb[k+i-1].x;
 			aux = diag[DS]*xb[k+i+1].x +  diag[DIA]*xb[k+i-nx].x;
 			xb[k+i].x = xb[k+i].x - aux - diag[DSA]*xb[k+i+nx].x;
 
 			xb[k+i].x = xb[k+i].x/diag[DP];
+
+			//////loop
+
+			xb[k+i+1].x = xb[k+i+1].b - diag[DI]*xb[k+i].x;
+			aux = diag[DS]*xb[k+i+2].x +  diag[DIA]*xb[k+i-nx+1].x;
+			xb[k+i+1].x = xb[k+i+1].x - aux - diag[DSA]*xb[k+i+nx+1].x;
+
+			xb[k+i+1].x = xb[k+i+1].x/diag[DP];
 		}
 		// calculando o ultimo valor
 		xb[k+nx-1].x = xb[k+nx-1].b - diag[DI]*xb[k+nx-2].x;
@@ -253,11 +270,14 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
 		real_t aux = diag[DS]*xb[k+i+1].x + diag[DIA]*xb[k+i-nx].x;
 		xb[k+i].x -= aux;
 
-	  /*  e->x[pos] -= e->di*e->x[pos-1];
-	    e->x[pos] -= e->ds*e->x_prev[pos+1];
-	    e->x[pos] -= e->dia*e->x[pos-e->nx];*/
-
 	  	xb[k+i].x = xb[k+i].x/diag[DP];
+
+	  	//
+		xb[k+i+1].x = xb[k+i+1].b -  diag[DI]*xb[k+i].x;
+		real_t aux2 = diag[DS]*xb[k+i+2].x + diag[DIA]*xb[k+i+1-nx].x;
+		xb[k+i+1].x -= aux2;
+
+	  	xb[k+i+1].x = xb[k+i+1].x/diag[DP];
 	}
 	  // calcula pos[nx-1,ny-1]
 	  xb[(nx)*(ny)-1].x = xb[(nx)*(ny)-1].b - diag[DI]*xb[(nx)*(ny)-2].x - diag[DIA]*xb[(nx)*(ny)-1-nx].x;
@@ -265,7 +285,14 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
 
 		LIKWID_MARKER_STOP("Gauss");
 	  }
-	
+
+	/* for (int i = 0; i<ny; i++){
+	 	for (int j = 0; j<nx; j++) {
+	 		printf("%f ", xb[i*nx+j].x);
+	 	}
+	 	printf("\n");
+	 }
+	*/
 	LIKWID_MARKER_CLOSE;
 	return 1;
 }
