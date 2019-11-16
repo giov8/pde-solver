@@ -206,7 +206,7 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
 	  	xb[0].x = xb[0].x/diag[DP];
 
 		// calcula a primeira linha da "matriz"
-		for (unsigned int i = 1 ; i <= nx-3  ; i++) {
+		for (unsigned int i = 1 ; i <= nx-3  ; i+=2) {
 			xb[i].x = xb[i].b - diag[DI]*xb[i-1].x;
 			real_t aux = diag[DS]*xb[i+1].x + diag[DSA]*xb[i+nx].x;
 			xb[i].x -= aux;
@@ -236,7 +236,7 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
  		xb[k].x = xb[k].x/diag[DP];
 
         // calculando valores centrais
-      	for (unsigned int i = 1 ; i <= nx -3 ; i ++) {
+      	for (unsigned int i = 1 ; i <= nx -3 ; i +=2) {
 			xb[k+i].x = xb[k+i].b - diag[DI]*xb[k+i-1].x;
 			aux = diag[DS]*xb[k+i+1].x +  diag[DIA]*xb[k+i-nx].x;
 			xb[k+i].x = xb[k+i].x - aux - diag[DSA]*xb[k+i+nx].x;
@@ -265,7 +265,7 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
 
 	  xb[k].x = xb[k].x/diag[DP];
 	  // calcula última linha da matriz "fronteira"
-	  for (unsigned int i = 1 ; i <= nx-2 ; i++) {
+	  for (unsigned int i = 1 ; i <= nx-2 ; i+=2) {
 		xb[k+i].x = xb[k+i].b -  diag[DI]*xb[k+i-1].x;
 		real_t aux = diag[DS]*xb[k+i+1].x + diag[DIA]*xb[k+i-nx].x;
 		xb[k+i].x -= aux;
