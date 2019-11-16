@@ -52,5 +52,5 @@ int main(int argc, char *argv[]){
 	XB_t *xb = (XB_t *) calloc (e->nx * e->ny, sizeof (XB_t));
 
 	mediaTempo = calculaGaussSeidel(e, vetorResiduos, xb);
-	//escreveSolucao(arquivo_saida, e, vetorResiduos, mediaTempo, xb) ;
+	escreveSolucao(arquivo_saida, e, vetorResiduos, mediaTempo, xb) ;
 }
