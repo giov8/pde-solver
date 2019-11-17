@@ -1,0 +1,29 @@
+--------------------------------------------------------------------------------
+CPU name:	Intel(R) Core(TM) i5-7500 CPU @ 3.40GHz
+CPU type:	Intel Coffeelake processor
+CPU clock:	3.41 GHz
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+STRUCT,Info,3
+CPU name:,Intel(R) Core(TM) i5-7500 CPU @ 3.40GHz,
+CPU type:,Intel Coffeelake processor,
+CPU clock:,3.407856831 GHz,
+TABLE,Region Gauss,Group 1 Raw,L2CACHE,5
+Region Info,Core 3,
+RDTSC Runtime [s],0.000665,
+call count,10,
+Event,Counter,Core 3
+INSTR_RETIRED_ANY,FIXC0,2320960
+CPU_CLK_UNHALTED_CORE,FIXC1,2530849
+CPU_CLK_UNHALTED_REF,FIXC2,2275976
+L2_TRANS_ALL_REQUESTS,PMC0,129589
+L2_RQSTS_MISS,PMC1,33523
+TABLE,Region Gauss,Group 1 Metric,L2CACHE,7
+Metric,Core 3,
+Runtime (RDTSC) [s],0.0007,
+Runtime unhalted [s],0.0007,
+Clock [MHz],3789.4824,
+CPI,1.0904,
+L2 request rate,0.0558,
+L2 miss rate,0.0144,
+L2 miss ratio,0.2587,
