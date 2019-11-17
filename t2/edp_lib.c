@@ -59,11 +59,6 @@ EDP_t *criaTipoEDP(int nx, int ny, real_t lx, real_t ly, int maxIter){
 	e->lx = lx;
 	e->ly = ly;
 
-	//e->x = (real_t *) calloc (nx * ny, sizeof (real_t)); // vetor solucao
-	//e->b = (real_t *) calloc (nx * ny, sizeof (real_t)); // vetor de termos independentes
-	//e->x_prev = (real_t *) calloc (nx * ny, sizeof (real_t)); // vetor solucao
-
-
 	// passo dado na malha
 	hx = lx/(nx+1);
 	hy = ly/(ny+1);
@@ -142,7 +137,6 @@ void calculaMatrizCoef(EDP_t *e, XB_t *xb){
 		xi = 0.0;
 		for(i = 0; i < e->nx ; i++) {
 			xi += hx;
-			//e->b[j*e->nx+i] = (2*hx*hx*hy*hy)*F(xi,yi); // calcula vetor de termos independentes
 			xb[j*e->nx+i].b = (2*hx*hx*hy*hy)*F(xi,yi); // calcula vetor de termos independentes
 
 			if(j == 0){
@@ -193,10 +187,6 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
 		exit(EXIT_FAILURE);
 	}
 
-	
-
-// #### new gauss ####
-
 	LIKWID_MARKER_INIT;
 	for (unsigned int iter = 0 ; iter < e->maxIter ; iter++) {
 		LIKWID_MARKER_START("Gauss");
@@ -212,7 +202,6 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
 			xb[i].x -= aux;
 	    	xb[i].x = xb[i].x/diag[DP];
 
-
 	    	xb[i+1].x = xb[i+1].b - diag[DI]*xb[i].x;
 			real_t aux2 = diag[DS]*xb[i+2].x + diag[DSA]*xb[i+1+nx].x;
 			xb[i+1].x -= aux2;
@@ -224,73 +213,66 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
 		xb[nx-1].x = xb[nx-1].b - diag[DI]*xb[nx-2].x - diag[DSA]*xb[2*nx-1].x;
 		xb[nx-1].x = xb[nx-1].x/diag[DP];
 
-	// calcula a "matriz" interna
-	for (unsigned int j = 1 ; j <= ny -2 ; j++) {
-		// calculando o primeiro valor
-  		unsigned int k = j*nx; // só pra não calcular toda vez
-  		xb[k].x = xb[k].b - diag[DS]*xb[k+1].x;
-  		real_t aux = diag[DIA]*xb[k-nx].x + diag[DSA]*xb[k+e->nx].x;
- 		xb[k].x -= aux;
- 		xb[k].x = xb[k].x/diag[DP];
+		// calcula a "matriz" interna
+		for (unsigned int j = 1 ; j <= ny -2 ; j++) {
+			// calculando o primeiro valor
+	  		unsigned int k = j*nx; // só pra não calcular toda vez
+	  		xb[k].x = xb[k].b - diag[DS]*xb[k+1].x;
+	  		real_t aux = diag[DIA]*xb[k-nx].x + diag[DSA]*xb[k+e->nx].x;
+	 		xb[k].x -= aux;
+	 		xb[k].x = xb[k].x/diag[DP];
 
-        // calculando valores centrais
-      	for (unsigned int i = 1 ; i <= nx -3 ; i +=2) {
-			xb[k+i].x = xb[k+i].b - diag[DI]*xb[k+i-1].x;
-			aux = diag[DS]*xb[k+i+1].x +  diag[DIA]*xb[k+i-nx].x;
-			xb[k+i].x = xb[k+i].x - aux - diag[DSA]*xb[k+i+nx].x;
+	        // calculando valores centrais
+	      	for (unsigned int i = 1 ; i <= nx -3 ; i +=2) {
+				xb[k+i].x = xb[k+i].b - diag[DI]*xb[k+i-1].x;
+				aux = diag[DS]*xb[k+i+1].x +  diag[DIA]*xb[k+i-nx].x;
+				xb[k+i].x = xb[k+i].x - aux - diag[DSA]*xb[k+i+nx].x;
+				xb[k+i].x = xb[k+i].x/diag[DP];
 
-			xb[k+i].x = xb[k+i].x/diag[DP];
+				xb[k+i+1].x = xb[k+i+1].b - diag[DI]*xb[k+i].x;
+				aux = diag[DS]*xb[k+i+2].x +  diag[DIA]*xb[k+i-nx+1].x;
+				xb[k+i+1].x = xb[k+i+1].x - aux - diag[DSA]*xb[k+i+nx+1].x;
+				xb[k+i+1].x = xb[k+i+1].x/diag[DP];
+			}
 
-			//////loop
-
-			xb[k+i+1].x = xb[k+i+1].b - diag[DI]*xb[k+i].x;
-			aux = diag[DS]*xb[k+i+2].x +  diag[DIA]*xb[k+i-nx+1].x;
-			xb[k+i+1].x = xb[k+i+1].x - aux - diag[DSA]*xb[k+i+nx+1].x;
-
-			xb[k+i+1].x = xb[k+i+1].x/diag[DP];
+			// calculando o ultimo valor
+			xb[k+nx-1].x = xb[k+nx-1].b - diag[DI]*xb[k+nx-2].x;
+			aux = diag[DIA]*xb[k-1].x + diag[DSA]*xb[k+2*nx-1].x;
+			xb[k+nx-1].x = xb[k+nx-1].x - aux;
+			xb[k+nx-1].x = xb[k+nx-1].x/diag[DP];
 		}
-		// calculando o ultimo valor
-		xb[k+nx-1].x = xb[k+nx-1].b - diag[DI]*xb[k+nx-2].x;
-		aux = diag[DIA]*xb[k-1].x + diag[DSA]*xb[k+2*nx-1].x;
-		xb[k+nx-1].x = xb[k+nx-1].x - aux;
 
-		xb[k+nx-1].x = xb[k+nx-1].x/diag[DP];
-	}
+	  	// calcula pos[0,ny-1]
+	  	unsigned int k = nx*(ny-1); // só pra calcular menos
+	  	xb[k].x = xb[k].b - diag[DS]*xb[k+1].x - diag[DIA]*xb[k-nx].x;
+	  	xb[k].x = xb[k].x/diag[DP];
 
-	  // calcula pos[0,ny-1]
-	  unsigned int k = nx*(ny-1); // só pra calcular menos
-	  xb[k].x = xb[k].b - diag[DS]*xb[k+1].x - diag[DIA]*xb[k-nx].x;
+	  	// calcula última linha da matriz "fronteira"
+		for (unsigned int i = 1 ; i <= nx-2 ; i+=2) {
+			xb[k+i].x = xb[k+i].b -  diag[DI]*xb[k+i-1].x;
+			real_t aux = diag[DS]*xb[k+i+1].x + diag[DIA]*xb[k+i-nx].x;
+			xb[k+i].x -= aux;
+		  	xb[k+i].x = xb[k+i].x/diag[DP];
 
-	  xb[k].x = xb[k].x/diag[DP];
-	  // calcula última linha da matriz "fronteira"
-	  for (unsigned int i = 1 ; i <= nx-2 ; i+=2) {
-		xb[k+i].x = xb[k+i].b -  diag[DI]*xb[k+i-1].x;
-		real_t aux = diag[DS]*xb[k+i+1].x + diag[DIA]*xb[k+i-nx].x;
-		xb[k+i].x -= aux;
+			xb[k+i+1].x = xb[k+i+1].b -  diag[DI]*xb[k+i].x;
+			real_t aux2 = diag[DS]*xb[k+i+2].x + diag[DIA]*xb[k+i+1-nx].x;
+			xb[k+i+1].x -= aux2;
+		  	xb[k+i+1].x = xb[k+i+1].x/diag[DP];
+		}
 
-	  	xb[k+i].x = xb[k+i].x/diag[DP];
-
-	  	//
-		xb[k+i+1].x = xb[k+i+1].b -  diag[DI]*xb[k+i].x;
-		real_t aux2 = diag[DS]*xb[k+i+2].x + diag[DIA]*xb[k+i+1-nx].x;
-		xb[k+i+1].x -= aux2;
-
-	  	xb[k+i+1].x = xb[k+i+1].x/diag[DP];
-	}
-	  // calcula pos[nx-1,ny-1]
-	  xb[(nx)*(ny)-1].x = xb[(nx)*(ny)-1].b - diag[DI]*xb[(nx)*(ny)-2].x - diag[DIA]*xb[(nx)*(ny)-1-nx].x;
-	  xb[(nx)*(ny)-1].x = xb[(nx)*(ny)-1].x/diag[DP];
-
+	  	// calcula pos[nx-1,ny-1]
+	  	xb[(nx)*(ny)-1].x = xb[(nx)*(ny)-1].b - diag[DI]*xb[(nx)*(ny)-2].x - diag[DIA]*xb[(nx)*(ny)-1-nx].x;
+	  	xb[(nx)*(ny)-1].x = xb[(nx)*(ny)-1].x/diag[DP];
 		LIKWID_MARKER_STOP("Gauss");
 
 		LIKWID_MARKER_START("Residuo");
 		r[iter] = calculaResiduo(e, xb);
 		LIKWID_MARKER_STOP("Residuo");
 
-	  }
+	}
 
 	LIKWID_MARKER_CLOSE;
-	return 1;
+	return 0;
 }
 
 
@@ -328,11 +310,11 @@ real_t calculaResiduo(EDP_t* restrict e, XB_t* restrict xb) {
 		real_t aux2 = diag[DS]*xb[i+2].x + diag[DSA]*xb[i+1+nx].x;
 		residuo2 = residuo2 - aux2;
 		normaquadrada += residuo2 * residuo2;
-		}
+	}
 
-		// calcula por fora o ultimo valor da "matriz" pos[0,nx]
-		residuo =  xb[nx-1].b - xb[nx-1].x*diag[DP] - diag[DI]*xb[nx-2].x - diag[DSA]*xb[2*nx-1].x;
-		normaquadrada =  residuo * residuo;
+	// calcula por fora o ultimo valor da "matriz" pos[0,nx]
+	residuo =  xb[nx-1].b - xb[nx-1].x*diag[DP] - diag[DI]*xb[nx-2].x - diag[DSA]*xb[2*nx-1].x;
+	normaquadrada =  residuo * residuo;
 
 	// calcula a "matriz" interna
 	for (unsigned int j = 1 ; j <= ny -2 ; j++) {
@@ -348,49 +330,43 @@ real_t calculaResiduo(EDP_t* restrict e, XB_t* restrict xb) {
 			residuo = xb[k+i].b - xb[k+i].x*diag[DP] - diag[DI]*xb[k+i-1].x;
 			aux = diag[DS]*xb[k+i+1].x +  diag[DIA]*xb[k+i-nx].x;
 			residuo = residuo - aux - diag[DSA]*xb[k+i+nx].x;
-
     		normaquadrada += residuo * residuo;
-
-			//i+1
 
 			residuo2 = xb[k+i+1].b - xb[k+i+1].x*diag[DP] - diag[DI]*xb[k+i].x;
 			real_t aux2 = diag[DS]*xb[k+i+2].x +  diag[DIA]*xb[k+i-nx+1].x;
 			residuo2 = residuo2 - aux2 - diag[DSA]*xb[k+i+nx+1].x;
-
 			normaquadrada += residuo2 * residuo2;
 		}
+
 		// calculando o ultimo valor
 		residuo = xb[k+nx-1].b - xb[k+nx-1].x*diag[DP] - diag[DI]*xb[k+nx-2].x;
 		aux = diag[DIA]*xb[k-1].x + diag[DSA]*xb[k+2*nx-1].x;
 		residuo =  residuo - aux;
-
 		normaquadrada += residuo * residuo;
 	}
 
-	  // calcula pos[0,ny-1]
-	  unsigned int k = nx*(ny-1); // só pra calcular menos
-	  residuo = xb[k].b - xb[k].x*diag[DP] - diag[DS]*xb[k+1].x - diag[DIA]*xb[k-nx].x;
+	// calcula pos[0,ny-1]
+	unsigned int k = nx*(ny-1); // só pra calcular menos
+	residuo = xb[k].b - xb[k].x*diag[DP] - diag[DS]*xb[k+1].x - diag[DIA]*xb[k-nx].x;
+	normaquadrada += residuo * residuo;
 
-	  normaquadrada += residuo * residuo;
-	  // calcula última linha da matriz "fronteira"
-	  for (unsigned int i = 1 ; i <= nx-2 ; i+=2) {
+	// calcula última linha da matriz "fronteira"
+	for (unsigned int i = 1 ; i <= nx-2 ; i+=2) {
 		residuo = xb[k+i].b - xb[k+i].x*diag[DP] - diag[DI]*xb[k+i-1].x;
 		real_t aux = diag[DS]*xb[k+i+1].x + diag[DIA]*xb[k+i-nx].x;
 		residuo = residuo - aux;
 	  	normaquadrada += residuo * residuo;
-
 
 		residuo2 = xb[k+i+1].b - xb[k+i+1].x*diag[DP] - diag[DI]*xb[k+i].x;
 		real_t aux2 = diag[DS]*xb[k+i+2].x + diag[DIA]*xb[k+i+1-nx].x;
 		residuo2 = residuo2 - aux2;
 	  	normaquadrada += residuo2 * residuo2;
 	}
-	  // calcula pos[nx-1,ny-1]
+	// calcula pos[nx-1,ny-1]
 	residuo = xb[(nx)*(ny)-1].b -  xb[(nx)*(ny)-1].x*diag[DP]  - diag[DI]*xb[(nx)*(ny)-2].x - diag[DIA]*xb[(nx)*(ny)-1-nx].x;
 	normaquadrada += residuo * residuo;
 
 	return sqrt(normaquadrada);
-
 }
 
 /*!
