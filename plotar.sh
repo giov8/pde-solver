@@ -54,7 +54,7 @@ set key horizontal
 set key spacing 3 
 set key samplen 3 
 set key width 2
-set logscale x
+set logscale y
 
 set title 'Medição de tempo de execução (Gauss-Seidel)' font ",24" 
 
@@ -108,7 +108,7 @@ set key horizontal
 set key spacing 3 
 set key samplen 3 
 set key width 2
-set logscale x
+set logscale y
 
 set title 'Medição de tempo de execução (Residuo)' font ",24" 
 
