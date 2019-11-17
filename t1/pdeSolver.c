@@ -52,5 +52,5 @@ int main(int argc, char *argv[]){
 	e = criaTipoEDP(nx, ny, lx, ly, maxIter); // cria estruturas de dados necessarias para os calculos envolvendo EDPs
 
 	mediaTempo = calculaGaussSeidel(e, vetorResiduos);
-	//escreveSolucao(arquivo_saida, e, vetorResiduos, mediaTempo);
+	escreveSolucao(arquivo_saida, e, vetorResiduos, mediaTempo);
 }

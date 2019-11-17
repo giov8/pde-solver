@@ -206,9 +206,9 @@ real_t calculaGaussSeidel(EDP_t *e, real_t *r){
 		}
 		LIKWID_MARKER_STOP("Gauss");
 
-		//LIKWID_MARKER_START("Residuo");
+		LIKWID_MARKER_START("Residuo");
 		r[iter] = calculaResiduo(e);
-		//LIKWID_MARKER_STOP("Residuo");
+		LIKWID_MARKER_STOP("Residuo");
 	}
 
 	LIKWID_MARKER_CLOSE;

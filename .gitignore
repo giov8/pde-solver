@@ -1,3 +1,4 @@
 pdeSolver
 pdeSolver.old
 *.o
+*.gch
