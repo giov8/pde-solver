@@ -220,8 +220,6 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
 
 		}
 
-
-
 		// calcula por fora o ultimo valor da "matriz" pos[0,nx]
 		xb[nx-1].x = xb[nx-1].b - diag[DI]*xb[nx-2].x - diag[DSA]*xb[2*nx-1].x;
 		xb[nx-1].x = xb[nx-1].x/diag[DP];
@@ -284,15 +282,13 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
 	  xb[(nx)*(ny)-1].x = xb[(nx)*(ny)-1].x/diag[DP];
 
 		LIKWID_MARKER_STOP("Gauss");
+
+		LIKWID_MARKER_START("Residuo");
+		r[iter] = calculaResiduo(e, xb);
+		LIKWID_MARKER_STOP("Residuo");
+
 	  }
 
-	/* for (int i = 0; i<ny; i++){
-	 	for (int j = 0; j<nx; j++) {
-	 		printf("%f ", xb[i*nx+j].x);
-	 	}
-	 	printf("\n");
-	 }
-	*/
 	LIKWID_MARKER_CLOSE;
 	return 1;
 }
@@ -303,28 +299,96 @@ real_t calculaGaussSeidel(EDP_t* restrict e, real_t* restrict r, XB_t* restrict 
 *  \param e Estrutura de dados com as variaveis para os calculos envolvendo EDPs
 *  \return sqrt(normaquadrada) a norma L2 da iteração
 */
-real_t calculaResiduo(EDP_t *e) {
-	unsigned int i, j, pos;
-	real_t residuo;
+real_t calculaResiduo(EDP_t* restrict e, XB_t* restrict xb) {
+	real_t residuo, residuo2;
 	real_t normaquadrada = 0.0;
-/*
-	for(j = 0 ; j < e->ny ; j++){
-		for(i = 0; i < e->nx; i++){
-			pos = j*e->nx+i; // iterar pelo vetor
 
-			residuo = (e->b[pos]) - (e->dp*e->x[pos]);
+	real_t diag[5];
+	diag[DP] = e->dp;
+	diag[DS] = e->ds;
+	diag[DI] = e->di;
+	diag[DSA] = e->dsa;
+	diag[DIA] = e->dia;
 
-			//analisa os casos de fronteira
-			if(i != 0)    residuo -= e->di * e->x[pos-1];
-			if(i != (e->nx-1)) residuo -= e->ds * e->x[pos+1];
-			if(j != 0)    residuo -= e->dia * e->x[pos-e->nx];
-			if(j != (e->ny-1)) residuo -= e->dsa * e->x[pos+e->nx];
+	int nx = e->nx;
+	int ny = e->ny;
 
-			normaquadrada += residuo * residuo;
+	// calcula por fora o valor da "matriz" pos[0,0]
+	residuo = xb[0].b - (diag[DP]*xb[0].x) - diag[DSA]*xb[nx].x;
+	normaquadrada = residuo * residuo;
+
+	// calcula a primeira linha da "matriz"
+	for (unsigned int i = 1 ; i <= nx-3  ; i+=2) {
+		residuo =  xb[i].b - xb[i].x*diag[DP] - diag[DI]*xb[i-1].x;
+		real_t aux = diag[DS]*xb[i+1].x + diag[DSA]*xb[i+nx].x;
+    	residuo = residuo - aux;
+    	normaquadrada += residuo * residuo;
+
+		residuo2 = xb[i+1].b - xb[i+1].x*diag[DP] - diag[DI]*xb[i].x;
+		real_t aux2 = diag[DS]*xb[i+2].x + diag[DSA]*xb[i+1+nx].x;
+		residuo2 = residuo2 - aux2;
+		normaquadrada += residuo2 * residuo2;
 		}
+
+		// calcula por fora o ultimo valor da "matriz" pos[0,nx]
+		residuo =  xb[nx-1].b - xb[nx-1].x*diag[DP] - diag[DI]*xb[nx-2].x - diag[DSA]*xb[2*nx-1].x;
+		normaquadrada =  residuo * residuo;
+
+	// calcula a "matriz" interna
+	for (unsigned int j = 1 ; j <= ny -2 ; j++) {
+		// calculando o primeiro valor
+  		unsigned int k = j*nx; // só pra não calcular toda vez
+  		residuo = xb[k].b - xb[k].x*diag[DP] - diag[DS]*xb[k+1].x;
+  		real_t aux = diag[DIA]*xb[k-nx].x + diag[DSA]*xb[k+e->nx].x;
+ 		residuo = residuo - aux;
+    	normaquadrada += residuo * residuo;
+
+        // calculando valores centrais
+      	for (unsigned int i = 1 ; i <= nx -3 ; i +=2) {
+			residuo = xb[k+i].b - xb[k+i].x*diag[DP] - diag[DI]*xb[k+i-1].x;
+			aux = diag[DS]*xb[k+i+1].x +  diag[DIA]*xb[k+i-nx].x;
+			residuo = residuo - aux - diag[DSA]*xb[k+i+nx].x;
+
+    		normaquadrada += residuo * residuo;
+
+			//i+1
+
+			residuo2 = xb[k+i+1].b - xb[k+i+1].x*diag[DP] - diag[DI]*xb[k+i].x;
+			real_t aux2 = diag[DS]*xb[k+i+2].x +  diag[DIA]*xb[k+i-nx+1].x;
+			residuo2 = residuo2 - aux2 - diag[DSA]*xb[k+i+nx+1].x;
+
+			normaquadrada += residuo2 * residuo2;
+		}
+		// calculando o ultimo valor
+		residuo = xb[k+nx-1].b - xb[k+nx-1].x*diag[DP] - diag[DI]*xb[k+nx-2].x;
+		aux = diag[DIA]*xb[k-1].x + diag[DSA]*xb[k+2*nx-1].x;
+		residuo =  residuo - aux;
+
+		normaquadrada += residuo * residuo;
 	}
-*/
-	normaquadrada=1;
+
+	  // calcula pos[0,ny-1]
+	  unsigned int k = nx*(ny-1); // só pra calcular menos
+	  residuo = xb[k].b - xb[k].x*diag[DP] - diag[DS]*xb[k+1].x - diag[DIA]*xb[k-nx].x;
+
+	  normaquadrada += residuo * residuo;
+	  // calcula última linha da matriz "fronteira"
+	  for (unsigned int i = 1 ; i <= nx-2 ; i+=2) {
+		residuo = xb[k+i].b - xb[k+i].x*diag[DP] - diag[DI]*xb[k+i-1].x;
+		real_t aux = diag[DS]*xb[k+i+1].x + diag[DIA]*xb[k+i-nx].x;
+		residuo = residuo - aux;
+	  	normaquadrada += residuo * residuo;
+
+
+		residuo2 = xb[k+i+1].b - xb[k+i+1].x*diag[DP] - diag[DI]*xb[k+i].x;
+		real_t aux2 = diag[DS]*xb[k+i+2].x + diag[DIA]*xb[k+i+1-nx].x;
+		residuo2 = residuo2 - aux2;
+	  	normaquadrada += residuo2 * residuo2;
+	}
+	  // calcula pos[nx-1,ny-1]
+	residuo = xb[(nx)*(ny)-1].b -  xb[(nx)*(ny)-1].x*diag[DP]  - diag[DI]*xb[(nx)*(ny)-2].x - diag[DIA]*xb[(nx)*(ny)-1-nx].x;
+	normaquadrada += residuo * residuo;
+
 	return sqrt(normaquadrada);
 
 }
