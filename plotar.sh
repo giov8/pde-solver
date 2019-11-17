@@ -17,6 +17,114 @@ cd t2
 make
 cd ..
 
+#--------- TEMPO (Gauss) ------------------
+
+echo "Calculando tempo de execucao (Gauss-Seidel)"
+
+arq_tmp=time_gauss.out
+
+touch $arq_tmp
+cp /dev/null $arq_tmp
+aux=10
+
+for i in ${elements[@]}; do
+	val_old=$(likwid-perfctr -C 3 -g L3 -m -O ./t1/pdeSolver -nx $i -ny $i -i 10 | tail -n36 | head -n1 | cut -d ',' -f2)
+	val_new=$(likwid-perfctr -C 3 -g L3 -m -O ./t2/pdeSolver -nx $i -ny $i -i 10 | tail -n36 | head -n1 | cut -d ',' -f2)
+	val_old=$(echo "scale=5; $val_old / $aux" | bc)
+	val_new=$(echo "scale=5; $val_new / $aux" | bc)
+	echo "$i $val_old $val_new " >> $arq_tmp
+done
+
+ytag="Tempo de execução [s]"
+arq_saida="time_gauss.png"
+
+gnuplot <<- EOF
+reset
+set terminal png size ${image_size} enhanced font 'Verdana,18' 
+set style data linespoints
+set style fill solid 2.00 border 0
+
+set style line 1 lc rgb 'orange' lt 1 lw 2 pt 13 ps 1.0
+set style line 2 lc rgb 'red' lt 1 lw 2 pt 7 ps 1.0
+set style line 3 lc rgb 'grey' lt 1 lw 2 pt 13 ps 1.0
+set style line 4 lc rgb 'green' lt 1 lw 2 pt 7 ps 1.0
+
+set key font ",18" 
+set key horizontal  
+set key spacing 3 
+set key samplen 3 
+set key width 2
+set logscale x
+
+set title 'Medição de tempo de execução (Gauss-Seidel)' font ",24" 
+
+set xrange ${x_range}
+
+set xlabel "Tamanho de nx e ny" 
+set xlabel font ",20" 
+set ylabel "$ytag" 
+set ylabel font ",20"
+
+set output "$arq_saida"
+plot '$arq_tmp' using 1:2 with linespoints ls 1 title "Trabalho 1", \
+'$arq_tmp' using 1:3 with linespoints ls 2 title "Trabalho 2 (Otimizado)"
+EOF
+echo "Grafico plotado em $arq_saida"
+
+#--------- TEMPO (Residuo) ------------------
+
+echo "Calculando tempo de execucao (Residuo)"
+
+arq_tmp=time_residuo.out
+
+touch $arq_tmp
+cp /dev/null $arq_tmp
+aux=10
+
+for i in ${elements[@]}; do
+	val_old=$(likwid-perfctr -C 3 -g L3 -m -O ./t1/pdeSolver -nx $i -ny $i -i 10 | tail -n10 | head -n1 | cut -d ',' -f2)
+	val_new=$(likwid-perfctr -C 3 -g L3 -m -O ./t2/pdeSolver -nx $i -ny $i -i 10 | tail -n10 | head -n1 | cut -d ',' -f2)
+	val_old=$(echo "scale=5; $val_old / $aux" | bc)
+	val_new=$(echo "scale=5; $val_new / $aux" | bc)
+	echo "$i $val_old $val_new " >> $arq_tmp
+done
+
+ytag="Tempo de execução [s]"
+arq_saida="time_residuo.png"
+
+gnuplot <<- EOF
+reset
+set terminal png size ${image_size} enhanced font 'Verdana,18' 
+set style data linespoints
+set style fill solid 2.00 border 0
+
+set style line 1 lc rgb 'orange' lt 1 lw 2 pt 13 ps 1.0
+set style line 2 lc rgb 'red' lt 1 lw 2 pt 7 ps 1.0
+set style line 3 lc rgb 'grey' lt 1 lw 2 pt 13 ps 1.0
+set style line 4 lc rgb 'green' lt 1 lw 2 pt 7 ps 1.0
+
+set key font ",18" 
+set key horizontal  
+set key spacing 3 
+set key samplen 3 
+set key width 2
+set logscale x
+
+set title 'Medição de tempo de execução (Residuo)' font ",24" 
+
+set xrange ${x_range}
+
+set xlabel "Tamanho de nx e ny" 
+set xlabel font ",20" 
+set ylabel "$ytag" 
+set ylabel font ",20"
+
+set output "$arq_saida"
+plot '$arq_tmp' using 1:2 with linespoints ls 1 title "Trabalho 1", \
+'$arq_tmp' using 1:3 with linespoints ls 2 title "Trabalho 2 (Otimizado)"
+EOF
+echo "Grafico plotado em $arq_saida"
+
 #--------- L2CACHE (Gauss) ------------------
 
 echo "Calculando L2CACHE (Gauss-Seidel)"
@@ -38,7 +146,7 @@ arq_saida="l2missratio_gauss.png"
 
 gnuplot <<- EOF
 reset
-set terminal png size ${image_size} enhanced font 'Verdana,12' 
+set terminal png size ${image_size} enhanced font 'Verdana,18' 
 set style data linespoints
 set style fill solid 2.00 border 0
 
@@ -47,20 +155,20 @@ set style line 2 lc rgb 'red' lt 1 lw 2 pt 7 ps 1.0
 set style line 3 lc rgb 'grey' lt 1 lw 2 pt 13 ps 1.0
 set style line 4 lc rgb 'green' lt 1 lw 2 pt 7 ps 1.0
 
-set key font ",10" 
+set key font ",18" 
 set key horizontal  
 set key spacing 3 
 set key samplen 3 
 set key width 2
 
-set title 'Medição de cache miss L2 (Gauss-Seidel)' font ",16" 
+set title 'Medição de cache miss L2 (Gauss-Seidel)' font ",24" 
 
 set xrange ${x_range}
 
 set xlabel "Tamanho de nx e ny" 
-set xlabel font ",13" 
+set xlabel font ",20" 
 set ylabel "$ytag" 
-set ylabel font ",13"
+set ylabel font ",20"
 
 set output "$arq_saida"
 plot '$arq_tmp' using 1:2 with linespoints ls 1 title "Trabalho 1", \
@@ -89,7 +197,7 @@ arq_saida="l2missratio_residuo.png"
 
 gnuplot <<- EOF
 reset
-set terminal png size ${image_size} enhanced font 'Verdana,12' 
+set terminal png size ${image_size} enhanced font 'Verdana,18' 
 set style data linespoints
 set style fill solid 2.00 border 0
 
@@ -98,20 +206,20 @@ set style line 2 lc rgb 'red' lt 1 lw 2 pt 7 ps 1.0
 set style line 3 lc rgb 'grey' lt 1 lw 2 pt 13 ps 1.0
 set style line 4 lc rgb 'green' lt 1 lw 2 pt 7 ps 1.0
 
-set key font ",10" 
+set key font ",18" 
 set key horizontal  
 set key spacing 3 
 set key samplen 3 
 set key width 2
 
-set title 'Medição de cache miss L2 (Resíduo)' font ",16" 
+set title 'Medição de cache miss L2 (Resíduo)' font ",24" 
 
 set xrange ${x_range}
 
 set xlabel "Tamanho de nx e ny" 
-set xlabel font ",13" 
+set xlabel font ",20" 
 set ylabel "$ytag" 
-set ylabel font ",13"
+set ylabel font ",20"
 
 set output "$arq_saida"
 plot '$arq_tmp' using 1:2 with linespoints ls 1 title "Trabalho 1", \
@@ -140,7 +248,7 @@ arq_saida="l3bandwidth_gauss.png"
 
 gnuplot <<- EOF
 reset
-set terminal png size ${image_size} enhanced font 'Verdana,12' 
+set terminal png size ${image_size} enhanced font 'Verdana,18' 
 set style data linespoints
 set style fill solid 2.00 border 0
 
@@ -149,20 +257,20 @@ set style line 2 lc rgb 'red' lt 1 lw 2 pt 7 ps 1.0
 set style line 3 lc rgb 'grey' lt 1 lw 2 pt 13 ps 1.0
 set style line 4 lc rgb 'green' lt 1 lw 2 pt 7 ps 1.0
 
-set key font ",10" 
+set key font ",18" 
 set key horizontal  
 set key spacing 3 
 set key samplen 3 
 set key width 2
 
-set title 'Medição de bandwidth L3 (Gauss-Seidel)' font ",16" 
+set title 'Medição de bandwidth L3 (Gauss-Seidel)' font ",24" 
 
 set xrange ${x_range}
 
 set xlabel "Tamanho de nx e ny" 
-set xlabel font ",13" 
+set xlabel font ",20" 
 set ylabel "$ytag" 
-set ylabel font ",13"
+set ylabel font ",20"
 
 set output "$arq_saida"
 plot '$arq_tmp' using 1:2 with linespoints ls 1 title "Trabalho 1", \
@@ -190,7 +298,7 @@ arq_saida="l3bandwidth_residuo.png"
 
 gnuplot <<- EOF
 reset
-set terminal png size ${image_size} enhanced font 'Verdana,12' 
+set terminal png size ${image_size} enhanced font 'Verdana,18' 
 set style data linespoints
 set style fill solid 2.00 border 0
 
@@ -199,20 +307,20 @@ set style line 2 lc rgb 'red' lt 1 lw 2 pt 7 ps 1.0
 set style line 3 lc rgb 'grey' lt 1 lw 2 pt 13 ps 1.0
 set style line 4 lc rgb 'green' lt 1 lw 2 pt 7 ps 1.0
 
-set key font ",10" 
+set key font ",18" 
 set key horizontal  
 set key spacing 3 
 set key samplen 3 
 set key width 2
 
-set title 'Medição de bandwidth L3 (Resíduo)' font ",16" 
+set title 'Medição de bandwidth L3 (Resíduo)' font ",24" 
 
 set xrange ${x_range}
 
 set xlabel "Tamanho de nx e ny" 
-set xlabel font ",13" 
+set xlabel font ",20" 
 set ylabel "$ytag" 
-set ylabel font ",13"
+set ylabel font ",20"
 
 set output "$arq_saida"
 plot '$arq_tmp' using 1:2 with linespoints ls 1 title "Trabalho 1", \
@@ -243,7 +351,7 @@ arq_saida="mflops_gauss.png"
 
 gnuplot <<- EOF
 reset
-set terminal png size ${image_size} enhanced font 'Verdana,12' 
+set terminal png size ${image_size} enhanced font 'Verdana,18' 
 set style data linespoints
 set style fill solid 2.00 border 0
 
@@ -252,20 +360,20 @@ set style line 2 lc rgb 'red' lt 1 lw 2 pt 7 ps 1.0
 set style line 3 lc rgb 'grey' lt 1 lw 2 pt 13 ps 1.0
 set style line 4 lc rgb 'green' lt 1 lw 2 pt 7 ps 1.0
 
-set key font ",10" 
+set key font ",18" 
 set key horizontal  
 set key spacing 3 
 set key samplen 3 
 set key width 2
 
-set title 'Medição de FLOPS DP e FLOPS AVX (Gauss-Seidel)' font ",16" 
+set title 'Medição de FLOPS DP e FLOPS AVX (Gauss-Seidel)' font ",24" 
 
 set xrange ${x_range}
 
 set xlabel "Tamanho de nx e ny" 
-set xlabel font ",13" 
+set xlabel font ",20" 
 set ylabel "$ytag" 
-set ylabel font ",13"
+set ylabel font ",20"
 
 set output "$arq_saida"
 plot '$arq_tmp' using 1:2 with linespoints ls 1 title "Trabalho 1 - FLOPS DP", \
@@ -298,7 +406,7 @@ arq_saida="mflops_residuo.png"
 
 gnuplot <<- EOF
 reset
-set terminal png size ${image_size} enhanced font 'Verdana,12' 
+set terminal png size ${image_size} enhanced font 'Verdana,18' 
 set style data linespoints
 set style fill solid 2.00 border 0
 
@@ -307,20 +415,20 @@ set style line 2 lc rgb 'red' lt 1 lw 2 pt 7 ps 1.0
 set style line 3 lc rgb 'grey' lt 1 lw 2 pt 13 ps 1.0
 set style line 4 lc rgb 'green' lt 1 lw 2 pt 7 ps 1.0
 
-set key font ",10" 
+set key font ",18" 
 set key horizontal  
 set key spacing 3 
 set key samplen 3 
 set key width 2
 
-set title 'Medição de FLOPS DP e FLOPS AVX (Residuo)' font ",16" 
+set title 'Medição de FLOPS DP e FLOPS AVX (Residuo)' font ",24" 
 
 set xrange ${x_range}
 
 set xlabel "Tamanho de nx e ny" 
-set xlabel font ",13" 
+set xlabel font ",20" 
 set ylabel "$ytag" 
-set ylabel font ",13"
+set ylabel font ",20"
 
 set output "$arq_saida"
 plot '$arq_tmp' using 1:2 with linespoints ls 1 title "Trabalho 1 - FLOPS DP", \
@@ -330,110 +438,4 @@ plot '$arq_tmp' using 1:2 with linespoints ls 1 title "Trabalho 1 - FLOPS DP", \
 EOF
 echo "Grafico plotado em $arq_saida"
 
-#--------- TEMPO (Gauss) ------------------
 
-echo "Calculando tempo de execucao (Gauss-Seidel)"
-
-arq_tmp=time_gauss.out
-
-touch $arq_tmp
-cp /dev/null $arq_tmp
-
-
-for i in ${elements[@]}; do
-	val_old=$(likwid-perfctr -C 3 -g L3 -m -O ./t1/pdeSolver -nx $i -ny $i -i 10 | tail -n36 | head -n1 | cut -d ',' -f2)
-	val_new=$(likwid-perfctr -C 3 -g L3 -m -O ./t2/pdeSolver -nx $i -ny $i -i 10 | tail -n36 | head -n1 | cut -d ',' -f2)
-	val_old=$((val_old/10))
-	val_new=$((val_new/10))
-	echo "$i $val_old $val_new " >> $arq_tmp
-done
-
-ytag="Tempo de execução [s]"
-arq_saida="time_gauss.png"
-
-gnuplot <<- EOF
-reset
-set terminal png size ${image_size} enhanced font 'Verdana,12' 
-set style data linespoints
-set style fill solid 2.00 border 0
-
-set style line 1 lc rgb 'orange' lt 1 lw 2 pt 13 ps 1.0
-set style line 2 lc rgb 'red' lt 1 lw 2 pt 7 ps 1.0
-set style line 3 lc rgb 'grey' lt 1 lw 2 pt 13 ps 1.0
-set style line 4 lc rgb 'green' lt 1 lw 2 pt 7 ps 1.0
-
-set key font ",10" 
-set key horizontal  
-set key spacing 3 
-set key samplen 3 
-set key width 2
-set logscale x
-
-set title 'Medição de tempo de execução (Gauss-Seidel)' font ",16" 
-
-set xrange ${x_range}
-
-set xlabel "Tamanho de nx e ny" 
-set xlabel font ",13" 
-set ylabel "$ytag" 
-set ylabel font ",13"
-
-set output "$arq_saida"
-plot '$arq_tmp' using 1:2 with linespoints ls 1 title "Trabalho 1", \
-'$arq_tmp' using 1:3 with linespoints ls 2 title "Trabalho 2 (Otimizado)"
-EOF
-echo "Grafico plotado em $arq_saida"
-
-#--------- TEMPO (Residuo) ------------------
-
-echo "Calculando tempo de execucao (Residuo)"
-
-arq_tmp=time_residuo.out
-
-touch $arq_tmp
-cp /dev/null $arq_tmp
-
-
-for i in ${elements[@]}; do
-	val_old=$(likwid-perfctr -C 3 -g L3 -m -O ./t1/pdeSolver -nx $i -ny $i -i 10 | tail -n10 | head -n1 | cut -d ',' -f2)
-	val_new=$(likwid-perfctr -C 3 -g L3 -m -O ./t2/pdeSolver -nx $i -ny $i -i 10 | tail -n10 | head -n1 | cut -d ',' -f2)
-	val_old=$((val_old/10))
-	val_new=$((val_new/10))
-	echo "$i $val_old $val_new " >> $arq_tmp
-done
-
-ytag="Tempo de execução [s]"
-arq_saida="time_residuo.png"
-
-gnuplot <<- EOF
-reset
-set terminal png size ${image_size} enhanced font 'Verdana,12' 
-set style data linespoints
-set style fill solid 2.00 border 0
-
-set style line 1 lc rgb 'orange' lt 1 lw 2 pt 13 ps 1.0
-set style line 2 lc rgb 'red' lt 1 lw 2 pt 7 ps 1.0
-set style line 3 lc rgb 'grey' lt 1 lw 2 pt 13 ps 1.0
-set style line 4 lc rgb 'green' lt 1 lw 2 pt 7 ps 1.0
-
-set key font ",10" 
-set key horizontal  
-set key spacing 3 
-set key samplen 3 
-set key width 2
-set logscale x
-
-set title 'Medição de tempo de execução (Residuo)' font ",16" 
-
-set xrange ${x_range}
-
-set xlabel "Tamanho de nx e ny" 
-set xlabel font ",13" 
-set ylabel "$ytag" 
-set ylabel font ",13"
-
-set output "$arq_saida"
-plot '$arq_tmp' using 1:2 with linespoints ls 1 title "Trabalho 1", \
-'$arq_tmp' using 1:3 with linespoints ls 2 title "Trabalho 2 (Otimizado)"
-EOF
-echo "Grafico plotado em $arq_saida"
